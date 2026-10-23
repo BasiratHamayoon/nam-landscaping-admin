@@ -37,6 +37,32 @@ export const fetchMe = createAsyncThunk(
   }
 )
 
+export const updateAdmin = createAsyncThunk(
+  "auth/updateAdmin",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const { data } = await api.put("/auth/update-profile", formData, {
+        headers: formData instanceof FormData ? { "Content-Type": "multipart/form-data" } : {},
+      })
+      return data.data
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to update profile")
+    }
+  }
+)
+
+export const updatePassword = createAsyncThunk(
+  "auth/updatePassword",
+  async (passwords, { rejectWithValue }) => {
+    try {
+      const { data } = await api.put("/auth/update-password", passwords)
+      return data.message || "Password updated successfully"
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to update password")
+    }
+  }
+)
+
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (email, { rejectWithValue }) => {
@@ -74,6 +100,9 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    setUser: (state, action) => {
+      state.user = action.payload
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -107,6 +136,29 @@ const authSlice = createSlice({
         state.user = null
         state.isAuthenticated = false
       })
+      .addCase(updateAdmin.pending, (state) => {
+        state.actionLoading = true
+        state.error = null
+      })
+      .addCase(updateAdmin.fulfilled, (state, action) => {
+        state.actionLoading = false
+        state.user = action.payload
+      })
+      .addCase(updateAdmin.rejected, (state, action) => {
+        state.actionLoading = false
+        state.error = action.payload
+      })
+      .addCase(updatePassword.pending, (state) => {
+        state.actionLoading = true
+        state.error = null
+      })
+      .addCase(updatePassword.fulfilled, (state) => {
+        state.actionLoading = false
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.actionLoading = false
+        state.error = action.payload
+      })
       .addCase(resetPassword.pending, (state) => {
         state.actionLoading = true
         state.error = null
@@ -121,5 +173,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearError } = authSlice.actions
+export const { clearError, setUser } = authSlice.actions
 export default authSlice.reducer
