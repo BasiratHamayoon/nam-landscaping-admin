@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useDispatch, useSelector } from "react-redux"
-import { Mail, Lock, Eye, EyeOff, LogIn, Leaf } from "lucide-react"
+import { Mail, Lock, Eye, EyeOff, LogIn, Leaf, Sparkles, ShieldCheck } from "lucide-react"
 import gsap from "gsap"
 import toast from "react-hot-toast"
 
@@ -17,7 +17,6 @@ export function LoginForm() {
   const dispatch = useDispatch()
   const router = useRouter()
 
-  // Use actionLoading for the login request, not session-check loading.
   const { actionLoading, error, isAuthenticated } = useSelector(
     (state) => state.auth
   )
@@ -46,8 +45,7 @@ export function LoginForm() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      toast.success("Welcome back!")
-      router.push("/dashboard")
+      router.replace("/dashboard")
     }
   }, [isAuthenticated, router])
 
@@ -58,13 +56,14 @@ export function LoginForm() {
     }
   }, [error, dispatch])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Prevent another submission while the login request is running.
     if (actionLoading) return
 
-    dispatch(loginAdmin(formData))
+    const result = await dispatch(loginAdmin(formData))
+    if (loginAdmin.fulfilled.match(result)) {
+      toast.success("Welcome back!")
+    }
   }
 
   return (
@@ -73,12 +72,15 @@ export function LoginForm() {
       className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 md:p-10 shadow-2xl relative z-10"
     >
       <div className="login-element flex flex-col items-center text-center mb-8">
-        <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center mb-5 shadow-lg shadow-primary-600/40">
-          <Leaf className="w-8 h-8 text-white" />
+        <div className="relative mb-5">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-emerald-700 flex items-center justify-center shadow-xl shadow-primary-600/40 rotate-6">
+            <Leaf className="w-8 h-8 text-white -rotate-6" />
+          </div>
+          <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-amber-400" />
         </div>
 
         <h1 className="font-heading text-3xl md:text-4xl text-foreground mb-2">
-          Welcome Back
+          Welcome <span className="italic text-primary-600 dark:text-primary-400">Back</span>
         </h1>
 
         <p className="text-sm text-muted-foreground">
@@ -89,21 +91,14 @@ export function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="login-element">
           <Label htmlFor="email">Email Address</Label>
-
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
             <Input
               id="email"
               type="email"
               placeholder="admin@namlandscaping.ae"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  email: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="pl-11"
               required
             />
@@ -112,10 +107,7 @@ export function LoginForm() {
 
         <div className="login-element">
           <div className="flex items-center justify-between mb-2">
-            <Label htmlFor="password" className="mb-0">
-              Password
-            </Label>
-
+            <Label htmlFor="password" className="mb-0">Password</Label>
             <Link
               href="/forgot-password"
               className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-semibold"
@@ -123,36 +115,24 @@ export function LoginForm() {
               Forgot password?
             </Link>
           </div>
-
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={formData.password}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  password: e.target.value,
-                })
-              }
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="pl-11 pr-11"
               required
             />
-
             <button
               type="button"
-              onClick={() => setShowPassword((previous) => !previous)}
+              onClick={() => setShowPassword((p) => !p)}
               aria-label={showPassword ? "Hide password" : "Show password"}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -171,8 +151,9 @@ export function LoginForm() {
         </div>
       </form>
 
-      <p className="login-element text-xs text-center text-muted-foreground mt-8">
-        Secured by JWT & bcrypt
+      <p className="login-element text-xs text-center text-muted-foreground mt-8 flex items-center justify-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-primary-500" />
+        Secured by JWT & bcrypt encryption
       </p>
     </div>
   )

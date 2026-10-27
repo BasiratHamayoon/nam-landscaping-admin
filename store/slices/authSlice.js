@@ -1,3 +1,4 @@
+// store/slices/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import api from "@/lib/api"
 
@@ -79,7 +80,7 @@ export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async ({ token, password }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post(`/auth/reset-password/${token}`, { password })
+      const { data } = await api.put(`/auth/reset-password/${token}`, { password })
       return data.message || "Password reset successfully"
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to reset password")
@@ -90,7 +91,7 @@ export const resetPassword = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
+    admin: null,
     isAuthenticated: false,
     loading: true,
     actionLoading: false,
@@ -100,8 +101,13 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
-    setUser: (state, action) => {
-      state.user = action.payload
+    setAdmin: (state, action) => {
+      state.admin = action.payload
+    },
+    resetAuth: (state) => {
+      state.admin = null
+      state.isAuthenticated = false
+      state.loading = false
     },
   },
   extraReducers: (builder) => {
@@ -112,7 +118,7 @@ const authSlice = createSlice({
       })
       .addCase(loginAdmin.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.user = action.payload
+        state.admin = action.payload
         state.isAuthenticated = true
       })
       .addCase(loginAdmin.rejected, (state, action) => {
@@ -120,7 +126,11 @@ const authSlice = createSlice({
         state.error = action.payload
       })
       .addCase(logoutAdmin.fulfilled, (state) => {
-        state.user = null
+        state.admin = null
+        state.isAuthenticated = false
+      })
+      .addCase(logoutAdmin.rejected, (state) => {
+        state.admin = null
         state.isAuthenticated = false
       })
       .addCase(fetchMe.pending, (state) => {
@@ -128,12 +138,12 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.loading = false
-        state.user = action.payload
+        state.admin = action.payload
         state.isAuthenticated = true
       })
       .addCase(fetchMe.rejected, (state) => {
         state.loading = false
-        state.user = null
+        state.admin = null
         state.isAuthenticated = false
       })
       .addCase(updateAdmin.pending, (state) => {
@@ -142,7 +152,7 @@ const authSlice = createSlice({
       })
       .addCase(updateAdmin.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.user = action.payload
+        state.admin = action.payload
       })
       .addCase(updateAdmin.rejected, (state, action) => {
         state.actionLoading = false
@@ -173,5 +183,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearError, setUser } = authSlice.actions
+export const { clearError, setAdmin, resetAuth } = authSlice.actions
 export default authSlice.reducer

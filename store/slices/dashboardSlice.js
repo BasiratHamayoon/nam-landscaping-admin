@@ -3,7 +3,7 @@ import { fetchApi } from "@/lib/api"
 
 export const fetchDashboardStats = createAsyncThunk(
   "dashboard/stats",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
       const [services, projects, gallery, testimonials, contacts] = await Promise.all([
         fetchApi("/services?limit=1"),
@@ -22,10 +22,20 @@ export const fetchDashboardStats = createAsyncThunk(
           contacts: contacts.data?.pagination?.total || 0,
         },
         recentContacts: contacts.data?.contacts || [],
+        fetchedAt: Date.now(),
       }
     } catch (error) {
       return rejectWithValue(error.message)
     }
+  },
+  {
+    // Prevent duplicate concurrent calls + cache for 60 seconds
+    condition: (_, { getState }) => {
+      const { dashboard } = getState()
+      if (dashboard.loading) return false
+      if (dashboard.fetchedAt && Date.now() - dashboard.fetchedAt < 60_000) return false
+      return true
+    },
   }
 )
 
@@ -36,8 +46,13 @@ const dashboardSlice = createSlice({
     recentContacts: [],
     loading: false,
     error: null,
+    fetchedAt: null,
   },
-  reducers: {},
+  reducers: {
+    invalidateDashboard: (state) => {
+      state.fetchedAt = null
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDashboardStats.pending, (state) => {
@@ -47,6 +62,7 @@ const dashboardSlice = createSlice({
         state.loading = false
         state.counts = action.payload.counts
         state.recentContacts = action.payload.recentContacts
+        state.fetchedAt = action.payload.fetchedAt
       })
       .addCase(fetchDashboardStats.rejected, (state, action) => {
         state.loading = false
@@ -55,4 +71,5 @@ const dashboardSlice = createSlice({
   },
 })
 
+export const { invalidateDashboard } = dashboardSlice.actions
 export default dashboardSlice.reducer
