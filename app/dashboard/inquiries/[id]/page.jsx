@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector, useDispatch } from 'react-redux';
@@ -32,7 +32,7 @@ import {
   Briefcase
 } from 'lucide-react';
 
-export default function InquiryDetailPage() {
+function InquiryDetailContent() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -444,5 +444,13 @@ export default function InquiryDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InquiryDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-gray-500 font-medium">Loading consultation lead details...</div>}>
+      <InquiryDetailContent />
+    </Suspense>
   );
 }

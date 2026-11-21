@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector, useDispatch } from 'react-redux';
@@ -37,7 +37,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-export default function OrderDetailPage() {
+function OrderDetailContent() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -677,5 +677,13 @@ export default function OrderDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OrderDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-gray-500 font-medium">Loading contract details...</div>}>
+      <OrderDetailContent />
+    </Suspense>
   );
 }

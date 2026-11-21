@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSelector, useDispatch } from 'react-redux';
@@ -18,7 +18,7 @@ import {
   Users
 } from 'lucide-react';
 
-export default function AreaDetailPage() {
+function AreaDetailContent() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
@@ -221,5 +221,13 @@ export default function AreaDetailPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function AreaDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-gray-500 font-medium">Loading zone details...</div>}>
+      <AreaDetailContent />
+    </Suspense>
   );
 }
