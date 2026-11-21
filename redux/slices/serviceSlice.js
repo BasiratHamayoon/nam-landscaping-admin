@@ -69,7 +69,13 @@ const initialState = {
       image: 'https://images.unsplash.com/photo-1509423350716-97f9360b4e09?auto=format&fit=crop&q=80',
       status: 'Active'
     }
-  ]
+  ],
+  filters: {
+    searchQuery: '',
+    selectedDivision: 'All',
+    selectedStatus: 'All',
+    viewMode: 'grid'
+  }
 };
 
 const serviceSlice = createSlice({
@@ -112,6 +118,24 @@ const serviceSlice = createSlice({
     },
     deleteSubService: (state, action) => {
       state.subServices = state.subServices.filter((s) => s.id !== action.payload);
+    },
+    setServiceSearchQuery: (state, action) => {
+      state.filters.searchQuery = action.payload;
+    },
+    setSelectedDivision: (state, action) => {
+      state.filters.selectedDivision = action.payload;
+    },
+    setSelectedServiceStatus: (state, action) => {
+      state.filters.selectedStatus = action.payload;
+    },
+    setServiceViewMode: (state, action) => {
+      state.filters.viewMode = action.payload;
+    },
+    toggleServiceStatus: (state, action) => {
+      const service = state.subServices.find((s) => s.id === action.payload);
+      if (service) {
+        service.status = service.status === 'Active' ? 'Paused' : 'Active';
+      }
     }
   }
 });
@@ -125,9 +149,20 @@ export const {
   deleteService,
   addSubService,
   updateSubService,
-  deleteSubService
+  deleteSubService,
+  setServiceSearchQuery,
+  setSelectedDivision,
+  setSelectedServiceStatus,
+  setServiceViewMode,
+  toggleServiceStatus
 } = serviceSlice.actions;
 
 export const selectServices = (state) => state.services;
+export const selectServiceFilters = (state) => state.services.filters || {
+  searchQuery: '',
+  selectedDivision: 'All',
+  selectedStatus: 'All',
+  viewMode: 'grid'
+};
 
 export default serviceSlice.reducer;
