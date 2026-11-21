@@ -1,25 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus,
   Search,
+  Plus,
+  Filter,
   Grid,
   List,
-  Edit2,
+  Edit,
   Trash2,
-  Sparkles,
-  CheckCircle2,
+  Eye,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
   Layers,
-  Briefcase,
+  Sparkles,
   Clock,
-  Star,
-  AlertTriangle,
-  GitBranch,
-  Award
+  ShieldCheck,
+  Building2,
+  Sprout,
+  ArrowRight
 } from 'lucide-react';
 import {
   selectServices,
@@ -34,29 +36,42 @@ import {
 
 export default function ServicesPage() {
   const dispatch = useDispatch();
-  const services = useSelector(selectServices);
-  const { searchQuery, selectedDivision, selectedStatus, viewMode } = useSelector(selectServiceFilters);
+  const servicesState = useSelector(selectServices);
+  const filters = useSelector(selectServiceFilters);
+
+  const subServices = Array.isArray(servicesState)
+    ? servicesState
+    : servicesState?.subServices || [];
+  const pillars = servicesState?.pillars || [];
+
   const [deleteModalId, setDeleteModalId] = useState(null);
 
-  const divisions = ['all', ...Array.from(new Set(services.map((s) => s.division)))];
+  const getPillarTitle = (pillarId) => {
+    const pillar = pillars.find((p) => p.id === pillarId);
+    return pillar ? pillar.title : 'General Landscaping';
+  };
 
-  const filteredServices = services.filter((service) => {
+  const pillarTitles = ['All', ...pillars.map((p) => p.title)];
+
+  const searchQuery = filters?.searchQuery || '';
+  const selectedDivision = filters?.selectedDivision || 'All';
+  const selectedStatus = filters?.selectedStatus || 'All';
+  const viewMode = filters?.viewMode || 'grid';
+
+  const filteredServices = subServices.filter((service) => {
+    const servicePillarTitle = getPillarTitle(service.pillarId);
     const matchesSearch =
-      service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.subServices?.some((sub) => sub.title.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesDivision = selectedDivision === 'all' || service.division === selectedDivision;
-    const matchesStatus = selectedStatus === 'all' || service.status === selectedStatus;
+      service.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesDivision =
+      selectedDivision === 'All' || servicePillarTitle === selectedDivision;
+    
+    const matchesStatus =
+      selectedStatus === 'All' || service.status === selectedStatus;
 
     return matchesSearch && matchesDivision && matchesStatus;
   });
-
-  const totalServices = services.length;
-  const totalSubServices = services.reduce((acc, s) => acc + (s.subServices?.length || 0), 0);
-  const totalActiveContracts = services.reduce((acc, s) => acc + (s.activeContracts || 0), 0);
-  const totalCompletedProjects = services.reduce((acc, s) => acc + (s.completedProjects || 0), 0);
 
   const handleDeleteConfirm = () => {
     if (deleteModalId) {
@@ -66,385 +81,331 @@ export default function ServicesPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-8 pb-12">
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold tracking-wider uppercase mb-1">
-            <Sparkles className="w-3.5 h-3.5" /> Service Architecture & Offerings
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Services Management</h1>
-          <p className="text-slate-600 text-sm mt-0.5">
-            Manage primary landscaping categories, nested sub-services, starting rates, and SEO pages.
+          <h1 className="text-3xl font-serif font-medium text-[#07190e]">
+            Service Offerings & Packages
+          </h1>
+          <p className="text-sm text-[#07190e]/60 mt-1">
+            Manage architectural hardscaping, softscaping, and turnkey commercial landscaping packages.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard/services/new"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all duration-200 hover:scale-[1.02]"
+            href="/dashboard/services/pillars/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#07190e]/20 text-[#07190e] hover:bg-[#07190e]/5 font-medium text-sm transition-colors"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" /> Add New Service
+            <Layers className="w-4 h-4" />
+            New Pillar
+          </Link>
+          <Link
+            href="/dashboard/services/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#07190e] text-white hover:bg-[#07190e]/90 font-medium text-sm transition-colors shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            Add Service Package
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Main Services</span>
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Layers className="w-4 h-4" />
+      {/* Primary Pillars Grid */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-serif font-medium text-[#07190e]">
+          Primary Service Pillars ({pillars.length})
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {pillars.map((pillar) => (
+            <div
+              key={pillar.id}
+              className="bg-white rounded-2xl border border-[#07190e]/10 overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between"
+            >
+              <div className="h-36 relative overflow-hidden bg-[#07190e]/5">
+                {pillar.image ? (
+                  <img
+                    src={pillar.image}
+                    alt={pillar.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[#07190e]/20">
+                    <Layers className="w-12 h-12" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <span className="absolute bottom-3 left-4 text-xs font-medium bg-white/20 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/30">
+                  {subServices.filter((s) => s.pillarId === pillar.id).length} Packages
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                <div>
+                  <h3 className="font-serif text-lg font-medium text-[#07190e]">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-xs text-[#07190e]/60 line-clamp-2 mt-1">
+                    {pillar.tagline || pillar.description}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-[#07190e]/5 text-xs">
+                  <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {pillar.status || 'Active'}
+                  </span>
+                  <Link
+                    href={`/dashboard/services/pillars/${pillar.id}`}
+                    className="inline-flex items-center gap-1 text-[#07190e] hover:underline font-medium"
+                  >
+                    Edit Pillar
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-3">{totalServices}</div>
-          <div className="text-xs text-slate-500 mt-1">Primary website service pillars</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Nested Sub-Services</span>
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200">
-              <GitBranch className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-3">{totalSubServices}</div>
-          <div className="text-xs text-slate-500 mt-1">Dedicated sub-service landing pages</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-          className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Contracts</span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
-              <Briefcase className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-emerald-700 mt-3">{totalActiveContracts}</div>
-          <div className="text-xs text-slate-500 mt-1">Ongoing Dubai villa & AMC sites</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Completed Projects</span>
-            <div className="p-2.5 rounded-xl bg-purple-50 text-purple-700 border border-purple-200">
-              <Award className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 mt-3">{totalCompletedProjects.toLocaleString()}</div>
-          <div className="text-xs text-slate-500 mt-1">Delivered across UAE communities</div>
-        </motion.div>
+          ))}
+        </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex-1 flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* Filter and Search Bar */}
+      <div className="bg-white rounded-2xl border border-[#07190e]/10 p-4 space-y-4 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#07190e]/40" />
             <input
               type="text"
-              placeholder="Search service, sub-service, or slug..."
+              placeholder="Search service offerings by keyword, warranty, or scope..."
               value={searchQuery}
               onChange={(e) => dispatch(setServiceSearchQuery(e.target.value))}
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-emerald-600 transition-all"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#07190e]/15 focus:outline-none focus:border-[#07190e] text-sm text-[#07190e]"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
-              value={selectedDivision}
-              onChange={(e) => dispatch(setSelectedDivision(e.target.value))}
-              className="w-full sm:w-48 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 transition-all"
-            >
-              {divisions.map((div) => (
-                <option key={div} value={div}>
-                  {div === 'all' ? 'All Divisions' : div}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-[#07190e]/50" />
+              <select
+                value={selectedDivision}
+                onChange={(e) => dispatch(setSelectedDivision(e.target.value))}
+                className="px-3 py-2 rounded-xl border border-[#07190e]/15 focus:outline-none focus:border-[#07190e] text-xs font-medium text-[#07190e] bg-white"
+              >
+                {pillarTitles.map((title) => (
+                  <option key={title} value={title}>
+                    Pillar: {title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <select
               value={selectedStatus}
               onChange={(e) => dispatch(setSelectedServiceStatus(e.target.value))}
-              className="w-full sm:w-36 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 transition-all"
+              className="px-3 py-2 rounded-xl border border-[#07190e]/15 focus:outline-none focus:border-[#07190e] text-xs font-medium text-[#07190e] bg-white"
             >
-              <option value="all">All Status</option>
+              <option value="All">Status: All</option>
               <option value="Active">Active</option>
+              <option value="Paused">Paused</option>
               <option value="Draft">Draft</option>
-              <option value="Seasonal">Seasonal</option>
             </select>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-200">
-          <span className="text-xs text-slate-600 font-medium">
-            Showing <strong className="text-emerald-700">{filteredServices.length}</strong> services
-          </span>
-          <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
-            <button
-              onClick={() => dispatch(setServiceViewMode('grid'))}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'grid' ? 'bg-white text-emerald-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => dispatch(setServiceViewMode('table'))}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'table' ? 'bg-white text-emerald-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
+            <div className="flex items-center rounded-xl border border-[#07190e]/15 p-0.5 bg-[#07190e]/[0.02]">
+              <button
+                type="button"
+                onClick={() => dispatch(setServiceViewMode('grid'))}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-[#07190e] text-white'
+                    : 'text-[#07190e]/60 hover:text-[#07190e]'
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatch(setServiceViewMode('list'))}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-[#07190e] text-white'
+                    : 'text-[#07190e]/60 hover:text-[#07190e]'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Services Content Section */}
       {filteredServices.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-12 text-center rounded-2xl bg-white border border-slate-200 shadow-sm"
-        >
-          <Layers className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-slate-900">No services match your filters</h3>
-          <p className="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-            Try clearing your search query or create a new landscaping service division.
+        <div className="bg-white rounded-2xl border border-[#07190e]/10 p-12 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-[#07190e]/5 text-[#07190e]/40 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-serif font-medium text-[#07190e]">No Services Found</h3>
+          <p className="text-sm text-[#07190e]/60 max-w-md mx-auto">
+            No service offerings match your current search query or pillar filters. Try clearing your filters.
           </p>
-        </motion.div>
+        </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          <AnimatePresence>
-            {filteredServices.map((service) => (
-              <motion.div
-                key={service.id}
-                layout
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                transition={{ duration: 0.2 }}
-                className="group rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative aspect-[16/9] bg-slate-100 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredServices.map((service) => (
+            <div
+              key={service.id}
+              className="bg-white rounded-2xl border border-[#07190e]/10 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="h-48 relative overflow-hidden bg-[#07190e]/5">
+                  {service.image ? (
                     <img
-                      src={service.heroImage}
+                      src={service.image}
                       alt={service.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/20 to-transparent" />
-
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                          service.status === 'Active'
-                            ? 'bg-emerald-500/95 border-emerald-600 text-white'
-                            : 'bg-slate-700/90 border-slate-800 text-white'
-                        }`}
-                      >
-                        {service.status === 'Active' && <CheckCircle2 className="w-3 h-3" />}
-                        {service.status}
-                      </span>
-                      {service.isFeatured && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/95 text-white border border-amber-600">
-                          <Sparkles className="w-2.5 h-2.5" /> Featured
-                        </span>
-                      )}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[#07190e]/20">
+                      <Sparkles className="w-12 h-12" />
                     </div>
-
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <Link
-                        href={`/dashboard/services/${service.id}`}
-                        className="p-2 rounded-xl bg-white hover:bg-emerald-600 text-slate-700 hover:text-white border border-slate-200 shadow-sm transition-colors"
-                        title="Edit Service"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Link>
-                      <button
-                        onClick={() => setDeleteModalId(service.id)}
-                        className="p-2 rounded-xl bg-white hover:bg-rose-600 text-slate-700 hover:text-white border border-slate-200 shadow-sm transition-colors"
-                        title="Delete Service"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block">
-                          {service.division}
-                        </span>
-                        <span className="text-xs font-mono text-slate-200">
-                          /services/{service.slug}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-300 block">Starts From</span>
-                        <span className="text-xs font-bold text-white bg-emerald-700 px-2.5 py-1 rounded-lg inline-block mt-0.5">
-                          AED {service.startingPrice.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <Link
-                        href={`/dashboard/services/${service.id}`}
-                        className="text-base font-bold text-slate-900 hover:text-emerald-700 transition-colors"
-                      >
-                        {service.title}
-                      </Link>
-                      <div className="flex items-center gap-1 text-amber-600 text-xs font-bold shrink-0">
-                        <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                        {service.rating}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {service.shortDescription}
-                    </p>
-
-                    <div className="pt-2">
-                      <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                        <span>Sub-Services ({service.subServices?.length || 0})</span>
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {service.duration}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {service.subServices?.slice(0, 3).map((sub) => (
-                          <span
-                            key={sub.id}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-medium text-slate-700"
-                          >
-                            {sub.title}
-                          </span>
-                        ))}
-                        {(service.subServices?.length || 0) > 3 && (
-                          <span className="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700">
-                            +{service.subServices.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <span>
-                      <strong className="text-slate-900">{service.activeContracts}</strong> Active Sites
-                    </span>
-                    <span>•</span>
-                    <span>
-                      <strong className="text-slate-900">{service.completedProjects}</strong> Delivered
-                    </span>
+                  )}
+                  <div className="absolute top-3 left-3 bg-[#07190e]/80 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium">
+                    {getPillarTitle(service.pillarId)}
                   </div>
                   <button
+                    type="button"
                     onClick={() => dispatch(toggleServiceStatus(service.id))}
-                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
+                    className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-sm transition-colors ${
+                      service.status === 'Active'
+                        ? 'bg-emerald-500/90 text-white'
+                        : 'bg-amber-500/90 text-white'
+                    }`}
                   >
-                    Toggle Status
+                    {service.status}
                   </button>
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+
+                <div className="p-5 space-y-4">
+                  <div>
+                    <h3 className="font-serif text-lg font-medium text-[#07190e] line-clamp-1">
+                      {service.title}
+                    </h3>
+                    <p className="text-xs text-[#07190e]/60 line-clamp-2 mt-1">
+                      {service.description}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-[#07190e]/5 text-xs">
+                    <div className="flex items-center justify-between text-[#07190e]/70">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#07190e]/40" />
+                        Timeframe:
+                      </span>
+                      <span className="font-medium text-[#07190e]">{service.duration || 'N/A'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[#07190e]/70">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#07190e]/40" />
+                        Warranty:
+                      </span>
+                      <span className="font-medium text-[#07190e]">{service.warranty || 'Included'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[#07190e]/60">Starting Price:</span>
+                      <span className="text-base font-semibold text-[#07190e]">
+                        AED {Number(service.startingPrice || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[#07190e]/[0.02] border-t border-[#07190e]/10 flex items-center justify-between">
+                <Link
+                  href={`/dashboard/services/${service.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#07190e] hover:underline"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Edit Package
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalId(service.id)}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#07190e]/10 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
+            <table className="w-full text-left text-sm text-[#07190e]">
+              <thead className="bg-[#07190e]/5 text-xs uppercase tracking-wider text-[#07190e]/70 border-b border-[#07190e]/10">
                 <tr>
-                  <th className="p-4">Service & Route Slug</th>
-                  <th className="p-4">Division</th>
-                  <th className="p-4">Sub-Services</th>
-                  <th className="p-4">Starting Rate</th>
-                  <th className="p-4">Active Sites</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 font-semibold">Service Package</th>
+                  <th className="p-4 font-semibold">Pillar Category</th>
+                  <th className="p-4 font-semibold">Starting Price</th>
+                  <th className="p-4 font-semibold">Timeframe</th>
+                  <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800">
+              <tbody className="divide-y divide-[#07190e]/10">
                 {filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4">
+                  <tr key={service.id} className="hover:bg-[#07190e]/[0.01] transition-colors">
+                    <td className="p-4 font-medium">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={service.heroImage}
-                          alt={service.title}
-                          className="w-14 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                        />
+                        {service.image && (
+                          <img
+                            src={service.image}
+                            alt=""
+                            className="w-10 h-10 rounded-lg object-cover border border-[#07190e]/10"
+                          />
+                        )}
                         <div>
-                          <Link
-                            href={`/dashboard/services/${service.id}`}
-                            className="font-bold text-sm text-slate-900 hover:text-emerald-700 transition-colors block"
-                          >
-                            {service.title}
-                          </Link>
-                          <span className="text-[11px] font-mono text-slate-500">/services/{service.slug}</span>
+                          <div className="font-semibold">{service.title}</div>
+                          <div className="text-xs text-[#07190e]/50 line-clamp-1">{service.description}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 font-semibold text-emerald-700">{service.division}</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-bold text-[11px]">
-                        {service.subServices?.length || 0} Sub-Pages
-                      </span>
+                    <td className="p-4 text-xs font-medium text-[#07190e]/70">
+                      {getPillarTitle(service.pillarId)}
+                    </td>
+                    <td className="p-4 font-semibold">
+                      AED {Number(service.startingPrice || 0).toLocaleString()}
+                    </td>
+                    <td className="p-4 text-xs text-[#07190e]/70">
+                      {service.duration || 'N/A'}
                     </td>
                     <td className="p-4">
-                      <div className="font-bold text-slate-900">AED {service.startingPrice.toLocaleString()}</div>
-                      <div className="text-[10px] text-slate-500">{service.pricingModel}</div>
-                    </td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-900">{service.activeContracts} Active</div>
-                      <div className="text-[10px] text-slate-500">{service.completedProjects} Completed</div>
-                    </td>
-                    <td className="p-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                      <button
+                        type="button"
+                        onClick={() => dispatch(toggleServiceStatus(service.id))}
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                           service.status === 'Active'
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                            : 'bg-slate-100 border-slate-200 text-slate-700'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
                         }`}
                       >
                         {service.status}
-                      </span>
+                      </button>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/dashboard/services/${service.id}`}
-                          className="p-2 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 transition-colors border border-slate-200"
-                          title="Edit Service"
+                          className="p-2 text-[#07190e]/70 hover:text-[#07190e] hover:bg-[#07190e]/5 rounded-lg transition-colors"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit className="w-4 h-4" />
                         </Link>
                         <button
+                          type="button"
                           onClick={() => setDeleteModalId(service.id)}
-                          className="p-2 rounded-lg bg-slate-100 hover:bg-rose-600 hover:text-white text-slate-700 transition-colors border border-slate-200"
-                          title="Delete Service"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -456,40 +417,36 @@ export default function ServicesPage() {
         </div>
       )}
 
+      {/* Delete Confirmation Modal */}
       {deleteModalId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md p-6 rounded-2xl bg-white border border-slate-200 shadow-2xl space-y-4 text-slate-900"
-          >
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Delete Service Pillar</h3>
-                <p className="text-xs text-slate-500">All nested sub-services under this pillar will also be removed.</p>
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+              <AlertCircle className="w-6 h-6" />
             </div>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Are you sure you want to permanently remove this service offering from the Royal Plantscape catalog?
-            </p>
+            <div className="space-y-2">
+              <h3 className="text-xl font-serif font-medium text-[#07190e]">Delete Service Package</h3>
+              <p className="text-sm text-[#07190e]/60">
+                Are you sure you want to remove this service package? This action cannot be undone.
+              </p>
+            </div>
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setDeleteModalId(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition-colors border border-slate-200"
+                className="px-4 py-2.5 rounded-xl border border-[#07190e]/20 text-[#07190e] text-sm font-medium hover:bg-[#07190e]/5 transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors shadow-md"
               >
                 Confirm Delete
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
