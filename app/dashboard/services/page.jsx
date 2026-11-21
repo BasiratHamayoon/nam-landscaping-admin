@@ -11,17 +11,12 @@ import {
   List,
   Edit,
   Trash2,
-  Eye,
   CheckCircle,
-  XCircle,
   AlertCircle,
   Layers,
   Sparkles,
   Clock,
-  ShieldCheck,
-  Building2,
-  Sprout,
-  ArrowRight
+  ShieldCheck
 } from 'lucide-react';
 import {
   selectServices,
@@ -94,13 +89,6 @@ export default function ServicesPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard/services/pillars/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#07190e]/20 text-[#07190e] hover:bg-[#07190e]/5 font-medium text-sm transition-colors"
-          >
-            <Layers className="w-4 h-4" />
-            New Pillar
-          </Link>
-          <Link
             href="/dashboard/services/new"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#07190e] text-white hover:bg-[#07190e]/90 font-medium text-sm transition-colors shadow-md"
           >
@@ -110,7 +98,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* Primary Pillars Grid */}
+      {/* Primary Pillars Cards */}
       <div className="space-y-4">
         <h2 className="text-lg font-serif font-medium text-[#07190e]">
           Primary Service Pillars ({pillars.length})
@@ -152,13 +140,6 @@ export default function ServicesPage() {
                     <CheckCircle className="w-3.5 h-3.5" />
                     {pillar.status || 'Active'}
                   </span>
-                  <Link
-                    href={`/dashboard/services/pillars/${pillar.id}`}
-                    className="inline-flex items-center gap-1 text-[#07190e] hover:underline font-medium"
-                  >
-                    Edit Pillar
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
                 </div>
               </div>
             </div>
